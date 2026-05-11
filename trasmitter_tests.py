@@ -51,3 +51,35 @@ def long_addr_test(pkt, Tests_State):
 
     if src and dst:
         Tests_State["long_addr"] = True
+
+def no_pan_id_compression_test(pkt, Tests_State):
+    # Hypothèse : le champ pan_id_compression est à 0.
+    # Résultat attendu : On trouve le champ pan_id_compression à 0
+    print("[P] Running no_pan_id_compression test...")
+
+    if pkt['wpan']['wpan_wpan_pan_id_compression'] != None and pkt['wpan']['wpan_wpan_pan_id_compression'] == False:
+        Tests_State["no_pan_id_compression"] = True
+
+def pan_id_compression_test(pkt, Tests_State):
+    # Hypothèse : le champ pan_id_compression est à 1.
+    # Résultat attendu : On trouve le champ pan_id_compression à 1
+    print("[P] Running pan_id_compression test...")
+
+    if pkt['wpan']['wpan_wpan_pan_id_compression'] and pkt['wpan']['wpan_wpan_pan_id_compression'] == True:
+        Tests_State["pan_id_compression"] = True
+
+def security_enabled_test(pkt, Tests_State):
+    # Hypothèse : le champ security_enabled est à 1.
+    # Résultat attendu : On trouve le champ security_enabled à 1
+    print("[P] Running security_enabled test...")
+
+    if pkt['wpan']['wpan_wpan_security_enabled'] and pkt['wpan']['wpan_wpan_security_enabled'] == True:
+        Tests_State["security_enabled"] = True
+
+def security_disabled_test(pkt, Tests_State):
+    # Hypothèse : le champ security_enabled est à 0.
+    # Résultat attendu : On trouve le champ security_enabled à 0
+    print("[P] Running security_disabled test...")
+
+    if pkt['wpan']['wpan_wpan_security_enabled'] != None and pkt['wpan']['wpan_wpan_security_enabled'] == False:
+        Tests_State["security_disabled"] = True

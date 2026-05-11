@@ -4,6 +4,9 @@ import argparse
 from build_html_report import print_bilan
 from trasmitter_tests import *
 from enum import Enum
+from scapy.all import wrpcap
+from datetime import datetime, time
+from jsontopcap import convert_ek_to_pcap
 
 # Correction pour Python 3.10+
 asyncio.set_event_loop(asyncio.new_event_loop())
@@ -23,6 +26,10 @@ class TestEnum(Enum):
     FramePendingTx = 3
     ShortAddr = 4
     LongAddr = 5
+    NoPanIdCompression = 6
+    PanIdCompression = 7
+    SecurityEnabled = 8
+    SecurityDisabled = 9
 
 Tests_State = {
     "no_ack_test_tx": False,
@@ -31,6 +38,10 @@ Tests_State = {
     "frame_pending_test_tx": False,
     "short_addr": False,
     "long_addr": False,
+    "no_pan_id_compression": False,
+    "pan_id_compression": False,
+    "security_enabled": False,
+    "security_disabled": False,
 }
 
 def process_frame(pkt):
@@ -53,6 +64,14 @@ def process_frame(pkt):
                 short_addr_test(pkt, Tests_State)
             case TestEnum.LongAddr.value:
                 long_addr_test(pkt, Tests_State)
+            case TestEnum.NoPanIdCompression.value:
+                no_pan_id_compression_test(pkt, Tests_State)
+            case TestEnum.PanIdCompression.value:
+                pan_id_compression_test(pkt, Tests_State)
+            case TestEnum.SecurityEnabled.value:
+                security_enabled_test(pkt, Tests_State)
+            case TestEnum.SecurityDisabled.value:
+                security_disabled_test(pkt, Tests_State)
             case _:
                 print(f"[⚠]Unknown test with seq_no: {wpan['wpan_wpan_seq_no']}")
     except KeyError:
@@ -75,7 +94,10 @@ def main():
     parser.add_argument("--channel", type=int, default=15)
     args = parser.parse_args()
 
-    cmd = [
+    now = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    # Python cmd qui envoie les données vers le fichier python
+    python_cmd = [
         "tshark",
         "-i", args.interface,
         "-Y", "wpan",
@@ -84,10 +106,10 @@ def main():
     ]
 
     print(f"[+] Capture live sur {args.interface}...")
-    print(f"[+] {' '.join(cmd)}")
+    print(f"[+] {' '.join(python_cmd)}")
 
-    proc = subprocess.Popen(
-        cmd,
+    python_proc = subprocess.Popen(
+        python_cmd,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
@@ -100,12 +122,12 @@ def main():
         nonlocal timer
         if timer:
             timer.cancel()
-        timer = threading.Timer(TIMEOUT, kill_proc, args=(proc,))
+        timer = threading.Timer(TIMEOUT, kill_proc, args=(python_proc,))
         timer.daemon = True
         timer.start()
 
     try:
-        for line in proc.stdout:
+        for line in python_proc.stdout:
             line = line.strip()
             if not line:
                 continue
@@ -116,6 +138,8 @@ def main():
                 if "layers" in packet_json:
                     process_frame(packet_json['layers'])
 
+                    # converted_packet = convert_ek_to_pcap(packet_json, None)
+
             except json.JSONDecodeError:
                 print(f"[!] JSON decode error: {line}")
                 pass
@@ -125,7 +149,7 @@ def main():
 
     finally:
         print("[+] Fin de la capture.")
-        proc.terminate()
+        python_proc.terminate()
 
     print_bilan(Tests_State)
 

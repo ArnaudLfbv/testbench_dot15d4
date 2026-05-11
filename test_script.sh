@@ -16,6 +16,7 @@ sleep 5
 
 echo "[+] Reset de la carte..."
 
+# cargo embed --bin test_card --release --features defmt,tsch flash
 probe-rs reset --chip nRF52840_xxAA
 
 if [ $? -ne 0 ]; then
@@ -28,3 +29,5 @@ echo "[+] Reset réussi"
 
 # Attendre que le script Python termine
 wait $PYTHON_PID
+
+read -p "Appuie sur Entrée pour quitter..."

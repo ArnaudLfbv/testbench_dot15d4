@@ -257,7 +257,7 @@ async fn upper_layer_task(
             _ => unreachable!(),
         }
 
-        if nb_sent >= 6 {
+        if nb_sent >= 10 {
             info!("Tests done, wait for incoming frames");
             break;
         }
@@ -293,6 +293,10 @@ enum TestId {
     FramePendingTestTx = 3,
     ShortSrcAddrTestTx = 4,
     LongSrcAddrTestTx = 5,
+    NoPanIdCompressionTestTx = 6,
+    PanIdCompressionTestTx = 7,
+    SecurityEnabledTestTx = 8,
+    SecurityDisabledTestTx = 9,
 }
 
 struct TestFrameConfig {
@@ -300,6 +304,8 @@ struct TestFrameConfig {
     ack_request: bool,
     frame_pending: bool,
     addressing_mode: AddressingMode,
+    pan_id_compression: bool,
+    security_enabled: bool,
 }
 
 impl Default for TestFrameConfig {
@@ -309,6 +315,8 @@ impl Default for TestFrameConfig {
             ack_request: false,
             frame_pending: false,
             addressing_mode: AddressingMode::Extended,
+            pan_id_compression: false,
+            security_enabled: false,
         }
     }
 }
@@ -322,6 +330,10 @@ impl From<u32> for TestId {
             3 => TestId::FramePendingTestTx,
             4 => TestId::ShortSrcAddrTestTx,
             5 => TestId::LongSrcAddrTestTx,
+            6 => TestId::NoPanIdCompressionTestTx,
+            7 => TestId::PanIdCompressionTestTx,
+            8 => TestId::SecurityEnabledTestTx,
+            9 => TestId::SecurityDisabledTestTx,
             _ => unimplemented!(),
         }
     }
@@ -351,6 +363,8 @@ fn build_test_frame(
 
     fc.set_src_addressing_mode(config.addressing_mode);
     fc.set_dst_addressing_mode(config.addressing_mode);
+    fc.set_pan_id_compression(config.pan_id_compression);
+    fc.set_security_enabled(config.security_enabled);
 
     MacRequest::McpsData(DataRequest {
         mpdu: mpdu_frame,
@@ -435,6 +449,58 @@ fn long_src_addr_test_frame(
     build_test_frame(buffer_allocator, src_addr, dst_addr, config)
 }
 
+fn no_pan_id_compression_test_frame(
+    buffer_allocator: MacBufferAllocator, 
+    src_addr: &Address<[u8; 8]>, 
+    dst_addr: &Address<[u8; 8]>
+) -> MacRequest {
+    let config = TestFrameConfig {
+        test_id: TestId::NoPanIdCompressionTestTx,
+        pan_id_compression: false,
+        ..Default::default()
+    };
+    build_test_frame(buffer_allocator, src_addr, dst_addr, config)
+}
+
+fn pan_id_compression_test_frame(
+    buffer_allocator: MacBufferAllocator, 
+    src_addr: &Address<[u8; 8]>, 
+    dst_addr: &Address<[u8; 8]>
+) -> MacRequest {
+    let config = TestFrameConfig {
+        test_id: TestId::PanIdCompressionTestTx,
+        pan_id_compression: true,
+        ..Default::default()
+    };
+    build_test_frame(buffer_allocator, src_addr, dst_addr, config)
+}
+
+fn security_enabled_test_frame(
+    buffer_allocator: MacBufferAllocator, 
+    src_addr: &Address<[u8; 8]>, 
+    dst_addr: &Address<[u8; 8]>
+) -> MacRequest {
+    let config = TestFrameConfig {
+        test_id: TestId::SecurityEnabledTestTx,
+        security_enabled: true,
+        ..Default::default()
+    };
+    build_test_frame(buffer_allocator, src_addr, dst_addr, config)
+}
+
+fn security_disabled_test_frame(
+    buffer_allocator: MacBufferAllocator, 
+    src_addr: &Address<[u8; 8]>, 
+    dst_addr: &Address<[u8; 8]>
+) -> MacRequest {
+    let config = TestFrameConfig {
+        test_id: TestId::SecurityDisabledTestTx,
+        security_enabled: false,
+        ..Default::default()
+    };
+    build_test_frame(buffer_allocator, src_addr, dst_addr, config)
+}
+
 fn run_tests(nb_sent: u32, 
     buffer_allocator: MacBufferAllocator, 
     src_addr: &Address<[u8; 8]>, 
@@ -447,6 +513,10 @@ fn run_tests(nb_sent: u32,
         TestId::FramePendingTestTx => frame_pending_test_frame(buffer_allocator, src_addr, dst_addr),
         TestId::ShortSrcAddrTestTx => short_src_addr_test_frame(buffer_allocator, src_addr, dst_addr),
         TestId::LongSrcAddrTestTx => long_src_addr_test_frame(buffer_allocator, src_addr, dst_addr),
+        TestId::NoPanIdCompressionTestTx => no_pan_id_compression_test_frame(buffer_allocator, src_addr, dst_addr),
+        TestId::PanIdCompressionTestTx => pan_id_compression_test_frame(buffer_allocator, src_addr, dst_addr),
+        TestId::SecurityEnabledTestTx => security_enabled_test_frame(buffer_allocator, src_addr, dst_addr),
+        TestId::SecurityDisabledTestTx => security_disabled_test_frame(buffer_allocator, src_addr, dst_addr),
         _ => unimplemented!(),
     }
 }
