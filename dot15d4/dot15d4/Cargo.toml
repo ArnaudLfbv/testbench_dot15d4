@@ -1,0 +1,89 @@
+[package]
+name = "dot15d4"
+version = "0.1.2"
+edition = "2021"
+repository = "https://github.com/thvdveld/dot15d4"
+description = "IEEE 802.15.4 implementation in Rust"
+license = "MIT OR Apache-2.0"
+categories = ["embedded", "network-programming", "no-std"]
+keywords = ["ieee802154", "WPAN", "smoltcp"]
+
+[dependencies]
+dot15d4-util = { version = "0.0.1", path = "../dot15d4-util" }
+dot15d4-driver = { version = "0.0.1", path = "../dot15d4-driver" }
+dot15d4-frame = { version = "0.0.1", path = "../dot15d4-frame", default-features = false }
+
+embassy-sync = { git = "https://github.com/fg-cfh/embassy.git", branch = "rtos-trace" }
+
+log = { version = "0.4.21", optional = true }
+defmt = { version = "1.0", optional = true }
+
+paste = "1.0"
+heapless = { version = "0.8" }
+rand_core = { version = "0.6", default-features = false }
+
+
+arbitrary = { version = "1.3.2", features = ["derive"], optional = true }
+
+rtos-trace = { version = "0.2", optional = true }
+
+[dev-dependencies]
+static_cell = "2"
+
+[features]
+default = ["security", "ies", "dot15d4-frame/strict"]
+
+## Enable std-only features
+std = ["log"]
+
+## Use tracing for logging
+log = ["dep:log", "dot15d4-driver/log", "dot15d4-util/log"]
+
+## Use defmt for logging
+defmt = ["dep:defmt", "dot15d4-driver/defmt", "dot15d4-util/defmt"]
+
+## Enable fuzzing
+fuzz = ["dep:arbitrary"]
+
+# Support for security
+security = ["dot15d4-frame/security"]
+
+# Support for information elements
+ies = ["dot15d4-frame/ies"]
+
+# Support for TSCH
+tsch = ["ies"]
+
+# Support for TSCH coordinator features (beacon transmission, etc.)
+tsch-coordinator = ["tsch"]
+
+# Disable Enh-Ack-based synchronization in TSCH network
+no-tsch-ack-sync = []
+
+# Disable frame-based synchronization in TSCH network
+no-tsch-frame-sync = []
+
+# Disable clock drift adjustment in TSCH network
+no-tsch-drift-adjustment = []
+
+# Tracing
+executor-trace = ["dot15d4-driver/executor-trace"]
+timer-trace = ["dot15d4-driver/timer-trace"]
+radio-trace = ["dot15d4-driver/radio-trace"]
+rtos-trace = [
+    "dep:rtos-trace",
+    "dot15d4-util/rtos-trace",
+    "dot15d4-driver/rtos-trace",
+]
+
+# Use an external sleep timer clock source.
+#
+# Note: MUST be enabled while the LF clock pin (X1) is actively driven by an
+#       external signal otherwise your hardware may be damaged.
+ext-lf-clk = ["dot15d4-driver/ext-lf-clk"]
+
+# Support for Nordic nrf52840
+nrf52840 = ["dot15d4-driver/nrf52840"]
+
+_clippy-std = ["std", "fuzz"]
+_clippy-no-std = ["default"]

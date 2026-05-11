@@ -1,0 +1,28 @@
+[package]
+name = "dot15d4-frame"
+version = "0.0.1"
+edition = "2021"
+authors = ["Florian Grandel <fgrandel@code-for-humans.de>"]
+repository = "https://github.com/thvdveld/dot15d4"
+description = "Frame parsing and building for the dot15d4 crate"
+license = "MIT OR Apache-2.0"
+categories = ["embedded", "network-programming", "no-std"]
+keywords = ["ieee802154", "wpan", "smoltcp"]
+
+[dependencies]
+dot15d4-util = { version = "0.0.1", path = "../dot15d4-util" }
+dot15d4-driver = { version = "0.0.1", path = "../dot15d4-driver" }
+
+bitflags = "2"
+
+[dev-dependencies]
+static_cell = "2.1"
+
+[features]
+strict = []                             # enable to deny warnings
+security = []
+ies = []
+default = ["strict", "security", "ies"]
+
+_clippy-std = []
+_clippy-no-std = ["default"]
