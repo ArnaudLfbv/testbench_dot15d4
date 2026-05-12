@@ -3,7 +3,7 @@ def no_ack_response_test(pkt, Tests_State):
     # Résultat attendu : Le message actuel se répète un certain nombre de fois.
     print("[P] Running no_ack test...")
 
-    if pkt['wpan']['wpan_wpan_ack_request'] != None and pkt['wpan']['wpan_wpan_ack_request'] == False:
+    if pkt.wpan.ack_request != None and pkt.wpan.ack_request.int_value == False:
         Tests_State["no_ack_test_tx"] = True
 
 def ack_response_test(pkt, Tests_State):
@@ -11,15 +11,16 @@ def ack_response_test(pkt, Tests_State):
     # Résultat attendu : Comportement normal.
     print("[P] Running ack_response test...")
 
-    if pkt['wpan']['wpan_wpan_ack_request'] and pkt['wpan']['wpan_wpan_ack_request'] == True:
+    if pkt.wpan.ack_request != None and pkt.wpan.ack_request.int_value == True:
         Tests_State["ack_test_tx"] = True
 
 def no_frame_pending_test(pkt, Tests_State):
     # Hypothèse : le champ frame_pending est à 0.
     # Résultat attendu : On trouve le champ frame_pending à 0
     print("[P] Running no_frame_pending test...")
+    
 
-    if pkt['wpan']['wpan_wpan_pending'] != None and pkt['wpan']['wpan_wpan_pending'] == False:
+    if pkt.wpan.pending != None and pkt.wpan.pending.int_value == False:
         Tests_State["no_frame_pending_test_tx"] = True
 
 def frame_pending_test(pkt, Tests_State):
@@ -27,7 +28,7 @@ def frame_pending_test(pkt, Tests_State):
     # Résultat attendu : On trouve le champ frame_pending à 1
     print("[P] Running frame_pending test...")
 
-    if pkt['wpan']['wpan_wpan_pending'] and pkt['wpan']['wpan_wpan_pending'] == True:
+    if pkt.wpan.pending != None and pkt.wpan.pending.int_value == True:
         Tests_State["frame_pending_test_tx"] = True
 
 def short_addr_test(pkt, Tests_State):
@@ -35,8 +36,8 @@ def short_addr_test(pkt, Tests_State):
     # Résultat attendu : On trouve le champ short_addr à 1
     print("[P] Running short_addr test...")
 
-    src = (pkt['wpan']['wpan_wpan_src_addr_mode'] != None and pkt['wpan']['wpan_wpan_src_addr_mode'] == '2')
-    dst = (pkt['wpan']['wpan_wpan_dst_addr_mode'] != None and pkt['wpan']['wpan_wpan_dst_addr_mode'] == '2')
+    src = (pkt.wpan.src_addr_mode != None and pkt.wpan.src_addr_mode.int_value == 2)
+    dst = (pkt.wpan.dst_addr_mode != None and pkt.wpan.dst_addr_mode.int_value == 2)
 
     if src and dst:
         Tests_State["short_addr"] = True
@@ -46,8 +47,8 @@ def long_addr_test(pkt, Tests_State):
     # Résultat attendu : On trouve le champ long_addr à 1
     print("[P] Running long_addr test...")
 
-    src = (pkt['wpan']['wpan_wpan_src_addr_mode'] != None and pkt['wpan']['wpan_wpan_src_addr_mode'] == '3')
-    dst = (pkt['wpan']['wpan_wpan_dst_addr_mode'] != None and pkt['wpan']['wpan_wpan_dst_addr_mode'] == '3')
+    src = (pkt.wpan.src_addr_mode != None and pkt.wpan.src_addr_mode.int_value == 3)
+    dst = (pkt.wpan.dst_addr_mode != None and pkt.wpan.dst_addr_mode.int_value == 3)
 
     if src and dst:
         Tests_State["long_addr"] = True
@@ -57,7 +58,7 @@ def no_pan_id_compression_test(pkt, Tests_State):
     # Résultat attendu : On trouve le champ pan_id_compression à 0
     print("[P] Running no_pan_id_compression test...")
 
-    if pkt['wpan']['wpan_wpan_pan_id_compression'] != None and pkt['wpan']['wpan_wpan_pan_id_compression'] == False:
+    if pkt.wpan.pan_id_compression != None and pkt.wpan.pan_id_compression.int_value == False:
         Tests_State["no_pan_id_compression"] = True
 
 def pan_id_compression_test(pkt, Tests_State):
@@ -65,7 +66,7 @@ def pan_id_compression_test(pkt, Tests_State):
     # Résultat attendu : On trouve le champ pan_id_compression à 1
     print("[P] Running pan_id_compression test...")
 
-    if pkt['wpan']['wpan_wpan_pan_id_compression'] and pkt['wpan']['wpan_wpan_pan_id_compression'] == True:
+    if pkt.wpan.pan_id_compression and pkt.wpan.pan_id_compression.int_value == True:
         Tests_State["pan_id_compression"] = True
 
 def security_enabled_test(pkt, Tests_State):
@@ -73,7 +74,7 @@ def security_enabled_test(pkt, Tests_State):
     # Résultat attendu : On trouve le champ security_enabled à 1
     print("[P] Running security_enabled test...")
 
-    if pkt['wpan']['wpan_wpan_security_enabled'] and pkt['wpan']['wpan_wpan_security_enabled'] == True:
+    if pkt.wpan.security and pkt.wpan.security.int_value == True:
         Tests_State["security_enabled"] = True
 
 def security_disabled_test(pkt, Tests_State):
@@ -81,5 +82,5 @@ def security_disabled_test(pkt, Tests_State):
     # Résultat attendu : On trouve le champ security_enabled à 0
     print("[P] Running security_disabled test...")
 
-    if pkt['wpan']['wpan_wpan_security'] != None and pkt['wpan']['wpan_wpan_security'] == False:
+    if pkt.wpan.security != None and pkt.wpan.security.int_value == False:
         Tests_State["security_disabled"] = True
