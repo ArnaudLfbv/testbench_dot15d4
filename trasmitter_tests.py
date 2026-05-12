@@ -84,3 +84,59 @@ def security_disabled_test(pkt, Tests_State):
 
     if pkt.wpan.security != None and pkt.wpan.security.int_value == False:
         Tests_State["security_disabled"] = True
+
+def data_frame_type_test(pkt, Tests_State):
+    # Hypothèse : le champ FrameType est de type FrameType::Data
+    # Résultat attendu : On trouve le champ FrameType à 1
+    print("[P] Running data_frame_type test...")
+    
+    if pkt.wpan.frame_type != None and pkt.wpan.frame_type.int_value == 1:
+        Tests_State["data_frame_type"] = True 
+
+def beacon_frame_type_test(pkt, Tests_State):
+    # Hypothèse : le champ FrameType est de type FrameType::Beacon
+    # Résultat attendu : On trouve le champ FrameType à 0
+    print("[P] Running beacon_frame_type test...")
+    
+    if pkt.wpan.frame_type != None and pkt.wpan.frame_type.int_value == 0:
+        Tests_State["beacon_frame_type"] = True 
+
+def ack_frame_type_test(pkt, Tests_State):
+    # Hypothèse : le champ FrameType est de type FrameType::Ack
+    # Résultat attendu : On trouve le champ FrameType à 2
+    print("[P] Running ack_frame_type test...")
+    
+    if pkt.wpan.frame_type != None and pkt.wpan.frame_type.int_value == 2:
+        Tests_State["ack_frame_type"] = True 
+
+def mac_cmd_frame_type_test(pkt, Tests_State):
+    # Hypothèse : le champ FrameType est de type FrameType::Data
+    # Résultat attendu : On trouve le champ FrameType à 1
+    print("[P] Running mac_cmd_frame_type test...")
+    
+    if pkt.wpan.frame_type != None and pkt.wpan.frame_type.int_value == 3:
+        Tests_State["mac_cmd_frame_type"] = True
+
+def multipurpose_frame_type_test(pkt, Tests_State):
+    # Hypothèse : le champ FrameType est de type FrameType::Multipurpose
+    # Résultat attendu : On trouve le champ FrameType à 5
+    print("[P] Running multipurpose_frame_type test...")
+    
+    if pkt.wpan.frame_type != None and pkt.wpan.frame_type.int_value == 5:
+        Tests_State["multipurpose_frame_type"] = True
+
+def fragment_frame_type_test(pkt, Tests_State):
+    # Hypothèse : le champ FrameType est de type FrameType::Fragment
+    # Résultat attendu : On trouve le champ FrameType à 6
+    print("[P] Running fragment_frame_type test...")
+    
+    if pkt.wpan.frame_type != None and pkt.wpan.frame_type.int_value == 6:
+        Tests_State["fragment_frame_type"] = True
+
+def extended_frame_type_test(pkt, Tests_State):
+    # Hypothèse : le champ FrameType est de type FrameType::Extended
+    # Résultat attendu : On trouve le champ FrameType à 7
+    print("[P] Running data_frame_type test...")
+    
+    if pkt.wpan.frame_type != None and pkt.wpan.frame_type.int_value == 7:
+        Tests_State["extended_frame_type"] = True    

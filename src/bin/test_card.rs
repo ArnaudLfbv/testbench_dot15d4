@@ -1,12 +1,14 @@
 #![no_std]
 #![no_main]
 
+use core::default;
+
 #[cfg(feature = "tsch")]
 use dot15d4::mac::procedures::{join_network_from_scan, scan, tsch_start_pan};
 use dot15d4::{
-    RngCore, RngError, driver::{
+    RngCore, RngError, constants::MAC_TSCH_MAX_PENDING_OPERATIONS, driver::{
         DriverEventChannel, DriverEventReceiver, DriverEventSender, DriverRequestChannel, DriverRequestReceiver, DriverRequestSender, DriverService, radio::{
-            RadioDriver, frame::{Address, AddressingMode, IeRepr, IeReprList}, tasks::{RadioDriverApi, TaskOff}
+            RadioDriver, frame::{Address, AddressingMode, FrameType, IeRepr, IeReprList}, tasks::{RadioDriverApi, TaskOff}
         }, socs::nrf::{NrfRadioDriver, NrfRadioSleepTimer, export::pac::ficr::info}, timer::{NsDuration, RadioTimerApi}
     }, mac::{
         MAC_BUFFER_SIZE, MacBufferAllocator, MacIndicationChannel, MacIndicationReceiver, MacIndicationSender, MacRequestChannel, MacRequestReceiver, MacRequestSender, MacService, frame::mpdu::{self, beacon_frame, data_frame}, primitives::{BeaconRequest, DataRequest, MacRequest}, procedures::{get_coordinator_extended_address, get_device_extended_address}
@@ -257,7 +259,7 @@ async fn upper_layer_task(
             _ => unreachable!(),
         }
 
-        if nb_sent >= 10 {
+        if nb_sent >= 17 {
             info!("Tests done, wait for incoming frames");
             break;
         }
@@ -297,6 +299,13 @@ enum TestId {
     PanIdCompressionTestTx = 7,
     SecurityEnabledTestTx = 8,
     SecurityDisabledTestTx = 9,
+    DataFrameTypeTestTx = 10,
+    BeaconFrameTypeTstTx = 11,
+    AckFrameTypeTestTx = 12,
+    MacCmdFrameTypeTestTx = 13,
+    MultiFrameTypeTestTx = 14,
+    FragmentFrameTypeTestTx = 15,
+    ExtendedFrameTypeTestTx = 16
 }
 
 struct TestFrameConfig {
@@ -306,6 +315,7 @@ struct TestFrameConfig {
     addressing_mode: AddressingMode,
     pan_id_compression: bool,
     security_enabled: bool,
+    frame_type: FrameType,
 }
 
 impl Default for TestFrameConfig {
@@ -317,6 +327,7 @@ impl Default for TestFrameConfig {
             addressing_mode: AddressingMode::Extended,
             pan_id_compression: false,
             security_enabled: false,
+            frame_type: FrameType::Data
         }
     }
 }
@@ -334,6 +345,13 @@ impl From<u32> for TestId {
             7 => TestId::PanIdCompressionTestTx,
             8 => TestId::SecurityEnabledTestTx,
             9 => TestId::SecurityDisabledTestTx,
+            10 => TestId::DataFrameTypeTestTx,
+            11 => TestId::BeaconFrameTypeTstTx,
+            12 => TestId::AckFrameTypeTestTx,
+            13 => TestId::MacCmdFrameTypeTestTx,
+            14 => TestId::MultiFrameTypeTestTx,
+            15 => TestId::FragmentFrameTypeTestTx,
+            16 => TestId::ExtendedFrameTypeTestTx,
             _ => unimplemented!(),
         }
     }
@@ -365,6 +383,7 @@ fn build_test_frame(
     fc.set_dst_addressing_mode(config.addressing_mode);
     fc.set_pan_id_compression(config.pan_id_compression);
     fc.set_security_enabled(config.security_enabled);
+    fc.set_frame_type(config.frame_type);
 
     MacRequest::McpsData(DataRequest {
         mpdu: mpdu_frame,
@@ -501,6 +520,97 @@ fn security_disabled_test_frame(
     build_test_frame(buffer_allocator, src_addr, dst_addr, config)
 }
 
+fn data_frame_type_test_frame(
+    buffer_allocator: MacBufferAllocator, 
+    src_addr: &Address<[u8; 8]>, 
+    dst_addr: &Address<[u8; 8]>
+) -> MacRequest {
+    let config = TestFrameConfig {
+        test_id: TestId::SecurityDisabledTestTx,
+        frame_type: FrameType::Data,
+        ..Default::default()
+    };
+    build_test_frame(buffer_allocator, src_addr, dst_addr, config)
+}
+
+fn ack_frame_type_test_frame(
+    buffer_allocator: MacBufferAllocator, 
+    src_addr: &Address<[u8; 8]>, 
+    dst_addr: &Address<[u8; 8]>
+) -> MacRequest {
+    let config = TestFrameConfig {
+        test_id: TestId::SecurityDisabledTestTx,
+        frame_type: FrameType::Ack,
+        ..Default::default()
+    };
+    build_test_frame(buffer_allocator, src_addr, dst_addr, config)
+}
+
+fn beacon_frame_type_test_frame(
+    buffer_allocator: MacBufferAllocator, 
+    src_addr: &Address<[u8; 8]>, 
+    dst_addr: &Address<[u8; 8]>
+) -> MacRequest {
+    let config = TestFrameConfig {
+        test_id: TestId::SecurityDisabledTestTx,
+        frame_type: FrameType::Beacon,
+        ..Default::default()
+    };
+    build_test_frame(buffer_allocator, src_addr, dst_addr, config)
+}
+
+fn maccmd_frame_type_test_frame(
+    buffer_allocator: MacBufferAllocator, 
+    src_addr: &Address<[u8; 8]>, 
+    dst_addr: &Address<[u8; 8]>
+) -> MacRequest {
+    let config = TestFrameConfig {
+        test_id: TestId::SecurityDisabledTestTx,
+        frame_type: FrameType::MacCommand,
+        ..Default::default()
+    };
+    build_test_frame(buffer_allocator, src_addr, dst_addr, config)
+}
+
+fn multipurpose_frame_type_test_frame(
+    buffer_allocator: MacBufferAllocator, 
+    src_addr: &Address<[u8; 8]>, 
+    dst_addr: &Address<[u8; 8]>
+) -> MacRequest {
+    let config = TestFrameConfig {
+        test_id: TestId::SecurityDisabledTestTx,
+        frame_type: FrameType::Multipurpose,
+        ..Default::default()
+    };
+    build_test_frame(buffer_allocator, src_addr, dst_addr, config)
+}
+
+fn fragment_frame_type_test_frame(
+    buffer_allocator: MacBufferAllocator, 
+    src_addr: &Address<[u8; 8]>, 
+    dst_addr: &Address<[u8; 8]>
+) -> MacRequest {
+    let config = TestFrameConfig {
+        test_id: TestId::SecurityDisabledTestTx,
+        frame_type: FrameType::FragmentOrFrak,
+        ..Default::default()
+    };
+    build_test_frame(buffer_allocator, src_addr, dst_addr, config)
+}
+
+fn extended_frame_type_test_frame(
+    buffer_allocator: MacBufferAllocator, 
+    src_addr: &Address<[u8; 8]>, 
+    dst_addr: &Address<[u8; 8]>
+) -> MacRequest {
+    let config = TestFrameConfig {
+        test_id: TestId::SecurityDisabledTestTx,
+        frame_type: FrameType::Extended,
+        ..Default::default()
+    };
+    build_test_frame(buffer_allocator, src_addr, dst_addr, config)
+}
+
 fn run_tests(nb_sent: u32, 
     buffer_allocator: MacBufferAllocator, 
     src_addr: &Address<[u8; 8]>, 
@@ -517,6 +627,13 @@ fn run_tests(nb_sent: u32,
         TestId::PanIdCompressionTestTx => pan_id_compression_test_frame(buffer_allocator, src_addr, dst_addr),
         TestId::SecurityEnabledTestTx => security_enabled_test_frame(buffer_allocator, src_addr, dst_addr),
         TestId::SecurityDisabledTestTx => security_disabled_test_frame(buffer_allocator, src_addr, dst_addr),
+        TestId::BeaconFrameTypeTstTx => build_test_frame(buffer_allocator, src_addr, dst_addr, Default::default()), // beacon_frame_type_test_frame(buffer_allocator, src_addr, dst_addr),
+        TestId::DataFrameTypeTestTx => data_frame_type_test_frame(buffer_allocator, src_addr, dst_addr),
+        TestId::AckFrameTypeTestTx => ack_frame_type_test_frame(buffer_allocator, src_addr, dst_addr),
+        TestId::MacCmdFrameTypeTestTx => maccmd_frame_type_test_frame(buffer_allocator, src_addr, dst_addr),
+        TestId::MultiFrameTypeTestTx => multipurpose_frame_type_test_frame(buffer_allocator, src_addr, dst_addr),
+        TestId::FragmentFrameTypeTestTx => fragment_frame_type_test_frame(buffer_allocator, src_addr, dst_addr),
+        TestId::ExtendedFrameTypeTestTx => extended_frame_type_test_frame(buffer_allocator, src_addr, dst_addr),
         _ => unimplemented!(),
     }
 }

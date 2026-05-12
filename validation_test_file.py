@@ -29,6 +29,13 @@ class TestEnum(Enum):
     PanIdCompression = 7
     SecurityEnabled = 8
     SecurityDisabled = 9
+    DataFrameType = 10
+    BeaconFrameType = 11
+    AckFrameType = 12
+    MacCmdFrameType = 13
+    MultiFrameType = 14
+    FragmentFrameType = 15
+    ExtendedFrameType = 16
 
 Tests_State = {
     "no_ack_test_tx": False,
@@ -41,6 +48,13 @@ Tests_State = {
     "pan_id_compression": False,
     "security_enabled": False,
     "security_disabled": False,
+    "data_frame_type": False,
+    "beacon_frame_type": False,
+    "ack_frame_type": False,
+    "mac_cmd_frame_type": False,
+    "multipurpose_frame_type": False,
+    "fragment_frame_type": False,
+    "extended_frame_type": False,
 }
 
 def process_frame(pkt):
@@ -50,7 +64,7 @@ def process_frame(pkt):
             print("[!] Packet missing seq_no")
             return
 
-        match int(wpan.seq_no.raw_value):
+        match int(wpan.seq_no.raw_value, 16):
             case TestEnum.NoAckTestTx.value:
                 no_ack_response_test(pkt, Tests_State)
             case TestEnum.AckTestTx.value:
@@ -71,6 +85,16 @@ def process_frame(pkt):
                 security_enabled_test(pkt, Tests_State)
             case TestEnum.SecurityDisabled.value:
                 security_disabled_test(pkt, Tests_State)
+            case TestEnum.DataFrameType.value:
+                data_frame_type_test(pkt, Tests_State)
+            case TestEnum.BeaconFrameType.value:
+                beacon_frame_type_test(pkt, Tests_State)
+            case TestEnum.MultiFrameType.value:
+                multipurpose_frame_type_test(pkt, Tests_State)
+            case TestEnum.FragmentFrameType.value:
+                fragment_frame_type_test(pkt, Tests_State)
+            case TestEnum.ExtendedFrameType.value:
+                extended_frame_type_test(pkt, Tests_State)
             case _:
                 print(f"[⚠]Unknown test with seq_no: {wpan.seq_no}")
     except KeyError:
