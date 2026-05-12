@@ -1,7 +1,7 @@
 from pathlib import Path
 from datetime import datetime
 
-def print_bilan(Tests_State):
+def print_bilan(Tests_State, timestamp=None):
     col1 = max(len(k) for k in Tests_State.keys())
     col2 = len("Résultat")
 
@@ -40,8 +40,8 @@ def print_bilan(Tests_State):
         print(line)
 
     # ---- HTML report ----
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = Path(f"bilan_{timestamp}.html")
+    # timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = Path(f"{timestamp}_bilan.html")
 
     html_content = f"""
 <!DOCTYPE html>

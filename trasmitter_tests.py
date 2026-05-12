@@ -81,5 +81,5 @@ def security_disabled_test(pkt, Tests_State):
     # Résultat attendu : On trouve le champ security_enabled à 0
     print("[P] Running security_disabled test...")
 
-    if pkt['wpan']['wpan_wpan_security_enabled'] != None and pkt['wpan']['wpan_wpan_security_enabled'] == False:
+    if pkt['wpan']['wpan_wpan_security'] != None and pkt['wpan']['wpan_wpan_security'] == False:
         Tests_State["security_disabled"] = True

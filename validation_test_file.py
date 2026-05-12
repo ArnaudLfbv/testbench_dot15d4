@@ -6,7 +6,6 @@ from trasmitter_tests import *
 from enum import Enum
 from scapy.all import wrpcap
 from datetime import datetime, time
-from jsontopcap import convert_ek_to_pcap
 
 # Correction pour Python 3.10+
 asyncio.set_event_loop(asyncio.new_event_loop())
@@ -77,6 +76,10 @@ def process_frame(pkt):
     except KeyError:
         pass  # Paquet sans layer wpan, on ignore
 
+
+# =========================================================================
+# Capture sans enregistrement sur fichier Wireshark 
+
 import argparse
 import subprocess
 import json
@@ -88,7 +91,7 @@ def kill_proc(proc):
 
 TIMEOUT = 10 # secondes
 
-def main():
+def process_live():
     parser = argparse.ArgumentParser()
     parser.add_argument("interface", help="Interface de capture")
     parser.add_argument("--channel", type=int, default=15)
@@ -138,8 +141,6 @@ def main():
                 if "layers" in packet_json:
                     process_frame(packet_json['layers'])
 
-                    # converted_packet = convert_ek_to_pcap(packet_json, None)
-
             except json.JSONDecodeError:
                 print(f"[!] JSON decode error: {line}")
                 pass
@@ -151,7 +152,141 @@ def main():
         print("[+] Fin de la capture.")
         python_proc.terminate()
 
-    print_bilan(Tests_State)
+    print_bilan(Tests_State, now)
+
+
+# =========================================================================
+# Capture avec enregistrement sur Wireshark 
+# MAIS problème, il manque une ou deux trames, au début et/ou à la fin
+
+def process_delayed_with_wireshark_v1():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("interface", help="Interface de capture")
+    parser.add_argument("--channel", type=int, default=15)
+    args = parser.parse_args()
+
+    now = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    # Python cmd qui envoie les données vers le fichier python
+    python_cmd = [
+        "bash",
+        "./tshark_timeout.sh",
+        now,
+    ]
+
+    isWireSharkFinished = False
+
+    print(f"[+] Capture live sur {args.interface}...")
+    print(f"[+] {' '.join(python_cmd)}")
+
+    python_proc = subprocess.Popen(
+        python_cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        bufsize=1,
+    )
+
+    timeElapsed = 0
+    import time
+    while not isWireSharkFinished:
+        if python_proc.poll() is None:
+            time.sleep(1)
+            timeElapsed += 1
+            pass
+        else:
+            isWireSharkFinished = True
+        print("Alive")
+        print(isWireSharkFinished)
+        print(python_proc.poll())
+        print(timeElapsed)
+
+    try:
+        def test(pkt):
+            print(pkt)
+
+        capture = pyshark.FileCapture(f"capture_{now}.pcapng", display_filter="wpan")
+        capture.apply_on_packets(test)
+
+    except KeyboardInterrupt:
+        print("\n[!] Arrêt de la capture.")
+
+    finally:
+        print("[+] Fin de la capture.")
+        python_proc.terminate()
+
+    print_bilan(Tests_State, now)
+
+
+import os
+def process_delayed_with_wireshark():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("interface", help="Interface de capture")
+    parser.add_argument("--channel", type=int, default=15)
+    args = parser.parse_args()
+
+    now = datetime.now().strftime("%Y%m%d_%H%M%S")
+    wiresharkFile = f"{now}_capture.pcapng"
+
+    # Python cmd qui envoie les données vers le fichier python
+    python_cmd = [
+        "tshark", 
+        "-i", args.interface, 
+        "-w", wiresharkFile
+    ]
+
+    print(f"[+] Capture live sur {args.interface}...")
+    print(f"[+] {' '.join(python_cmd)}")
+
+    python_proc = subprocess.Popen(
+        python_cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        bufsize=1,
+    )
+
+    print("[+] Reset")
+    subprocess.call(["probe-rs", "reset", "--chip", "nRF52840_xxAA"])
+
+    try:
+        # -- Timeout logic --
+        print("[+] Timeout started")
+        isWireSharkFinished = False
+        timeElapsedSinceLastCom = 0
+        fileSize = 0
+        import time
+        time.sleep(10)
+        while not isWireSharkFinished:
+            if fileSize == os.path.getsize(wiresharkFile):
+                timeElapsedSinceLastCom += 1
+            else:
+                timeElapsedSinceLastCom = 0
+                fileSize = os.path.getsize(wiresharkFile)
+            if timeElapsedSinceLastCom >= 10:
+                isWireSharkFinished = True
+            print(timeElapsedSinceLastCom)
+            time.sleep(1)
+
+    except KeyboardInterrupt:
+        print("\n[!] Arrêt de la capture.")
+
+    finally:
+        print("[+] Fin de la capture.")
+        python_proc.terminate()
+
+    def test(pkt):
+        print(pkt)
+
+    capture = pyshark.FileCapture(wiresharkFile, display_filter="wpan")
+    capture.apply_on_packets(test)
+
+    print_bilan(Tests_State, now)
+
+def main():
+    # process_live()
+    # process_delayed_with_wireshark_v1()
+    process_delayed_with_wireshark()
 
 if __name__ == "__main__":
     main()

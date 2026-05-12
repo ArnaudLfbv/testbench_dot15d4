@@ -6,3 +6,7 @@ __pycache__/
 *.lock
 
 target/
+
+*.pcapng
+
+*.pcap
